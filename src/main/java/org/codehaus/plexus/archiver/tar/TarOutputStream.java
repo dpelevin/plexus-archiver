@@ -70,6 +70,8 @@ public class TarOutputStream
 
     protected int longFileMode = LONGFILE_ERROR;
 
+    private String encoding;
+
     public TarOutputStream( OutputStream os )
     {
         this( os, TarBuffer.DEFAULT_BLKSIZE, TarBuffer.DEFAULT_RCDSIZE );
@@ -97,6 +99,25 @@ public class TarOutputStream
         this.longFileMode = longFileMode;
     }
 
+    /**
+     * Gets encoding used for filenames.
+     *
+     * @return The encoding.
+     */
+    public String getEncoding()
+    {
+        return encoding;
+    }
+
+    /**
+     * Sets encoding to use for filenames.
+     *
+     * @param encoding The encoding to use for filenames.
+     */
+    public void setEncoding( String encoding )
+    {
+        this.encoding = encoding;
+    }
 
     /**
      * Sets the debugging flag.
@@ -165,7 +186,17 @@ public class TarOutputStream
     public void putNextEntry( TarEntry entry )
         throws IOException
     {
-        byte[] entryName = entry.getName().getBytes();
+        byte[] entryName;
+
+        if ( encoding == null )
+        {
+            entryName = entry.getName().getBytes();
+        }
+        else
+        {
+            entryName = entry.getName().getBytes( encoding );
+        }
+
         if ( entryName.length >= TarConstants.NAMELEN )
         {
 
@@ -188,7 +219,7 @@ public class TarOutputStream
             }
         }
 
-        entry.writeEntryHeader( this.recordBuf );
+        entry.writeEntryHeader( this.recordBuf, encoding );
         this.buffer.writeRecord( this.recordBuf );
 
         this.currBytes = 0;

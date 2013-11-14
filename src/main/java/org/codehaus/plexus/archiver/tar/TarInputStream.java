@@ -26,6 +26,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * The TarInputStream reads a UNIX tar archive as an InputStream.
@@ -41,6 +42,8 @@ public class TarInputStream
 {
     protected boolean debug;
 
+    private String encoding;
+    
     protected boolean hasHitEOF;
 
     protected int entrySize;
@@ -85,6 +88,26 @@ public class TarInputStream
     {
         this.debug = debug;
         this.buffer.setDebug( debug );
+    }
+
+    /**
+     * Gets encoding used for filenames.
+     *
+     * @return The encoding.
+     */
+    public String getEncoding()
+    {
+        return encoding;
+    }
+
+    /**
+     * Sets encoding to use for filenames.
+     *
+     * @param encoding The encoding to use for filenames.
+     */
+    public void setEncoding( String encoding )
+    {
+        this.encoding = encoding;
     }
 
     /**
@@ -240,7 +263,7 @@ public class TarInputStream
         }
         else
         {
-            this.currEntry = new TarEntry( headerBuf );
+            this.currEntry = new TarEntry( headerBuf, encoding );
 
             if ( this.debug )
             {
@@ -256,23 +279,34 @@ public class TarInputStream
 
         if ( this.currEntry != null && this.currEntry.isGNULongNameEntry() )
         {
-            // read in the name
-            StringBuilder longName = new StringBuilder();
             byte[] buffer = new byte[256];
+            byte[] longNameBytes = new byte[0];
             int length;
             while ( ( length = read( buffer ) ) >= 0 )
             {
-                longName.append( new String( buffer, 0, length ) );
+                int prevLength = longNameBytes.length;
+                // remove trailing null terminator
+                if ( length > 0 && buffer[length - 1] != 0 )
+                {
+                    longNameBytes = Arrays.copyOf( longNameBytes, prevLength + length );
+                    System.arraycopy( buffer, 0, longNameBytes, prevLength, length );
+                }
+                else
+                {
+                    longNameBytes = Arrays.copyOf( longNameBytes, prevLength + length - 1 );
+                    System.arraycopy( buffer, 0, longNameBytes, prevLength, length - 1 );
+                }
             }
             getNextEntry();
 
-            // remove trailing null terminator
-            if ( longName.length() > 0
-                 && longName.charAt( longName.length() - 1 ) == 0 )
+            if ( encoding == null )
             {
-                longName.deleteCharAt( longName.length() - 1 );
+                this.currEntry.setName( new String( longNameBytes ) );
             }
-            this.currEntry.setName( longName.toString() );
+            else
+            {
+                this.currEntry.setName( new String( longNameBytes, encoding ) );
+            }
         }
 
         return this.currEntry;

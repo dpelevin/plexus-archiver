@@ -1,5 +1,8 @@
 package org.codehaus.plexus.archiver.tar;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+
 /*
  * Copyright  2000,2002,2004 The Apache Software Foundation
  *
@@ -72,7 +75,7 @@ public class TarUtils
 
         return result;
     }
-
+    
     /**
      * Parse an entry name from a header buffer.
      *
@@ -83,22 +86,50 @@ public class TarUtils
      */
     public static StringBuffer parseName( byte[] header, int offset, int length )
     {
+        return parseName( header, offset, length, null );
+    }
+
+    /**
+     * Parse an entry name from a header buffer.
+     *
+     * @param header The header buffer from which to parse.
+     * @param offset The offset into the buffer from which to parse.
+     * @param length The number of header bytes to parse.
+     * @param encoding The encoding to use for filenames.
+     * @return The header's entry name.
+     */
+    public static StringBuffer parseName( byte[] header, int offset, int length, String encoding )
+    {
         StringBuffer result = new StringBuffer( length );
         int end = offset + length;
 
-        for ( int i = offset; i < end; ++i )
+        int i;
+        for ( i = offset; i < end; ++i )
         {
             if ( header[ i ] == 0 )
             {
                 break;
             }
-
-            result.append( (char) header[ i ] );
         }
-
+        byte[] nameBytes = Arrays.copyOfRange( header, offset, i );
+        try
+        {
+            if ( encoding == null )
+            {
+                result.append( new String( nameBytes ) );
+            }
+            else
+            {
+                result.append( new String( nameBytes, encoding ) );
+            }
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException(e);
+        }
         return result;
     }
-
+    
     /**
      * Determine the number of bytes in an entry name.
      *
@@ -109,11 +140,41 @@ public class TarUtils
      */
     public static int getNameBytes( StringBuffer name, byte[] buf, int offset, int length )
     {
-        int i;
+        return getNameBytes( name, buf, offset, length, null );
+    }
 
-        for ( i = 0; i < length && i < name.length(); ++i )
+    /**
+     * Determine the number of bytes in an entry name.
+     *
+     * @param name   The header name from which to parse.
+     * @param buf the buf
+     * @param offset The offset into the buffer from which to parse.
+     * @param length The number of header bytes to parse.
+     * @param encoding The encoding to use for filenames.
+     * @return The number of bytes in a header's entry name.
+     */
+    public static int getNameBytes( StringBuffer name, byte[] buf, int offset, int length, String encoding )
+    {
+        int i;
+        byte[] nameBytes;
+        if ( encoding == null )
         {
-            buf[ offset + i ] = (byte) name.charAt( i );
+            nameBytes = name.toString().getBytes();
+        }
+        else
+        {
+            try
+            {
+                nameBytes = name.toString().getBytes(encoding);
+            }
+            catch ( UnsupportedEncodingException e )
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        for ( i = 0; i < length && i < nameBytes.length; ++i )
+        {
+            buf[ offset + i ] = nameBytes[i];
         }
 
         for ( ; i < length; ++i )

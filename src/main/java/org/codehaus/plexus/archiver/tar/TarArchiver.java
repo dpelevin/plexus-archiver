@@ -52,6 +52,12 @@ public class TarArchiver
 
     private TarLongFileMode longFileMode = new TarLongFileMode();
 
+    /**
+     * Encoding to use for filenames, defaults to the platform's
+     * default encoding.
+     */
+    private String encoding;
+
     private TarCompressionMethod compression = new TarCompressionMethod();
 
     private TarOptions options = new TarOptions();
@@ -132,6 +138,26 @@ public class TarArchiver
     }
 
     /**
+     * Gets encoding used for filenames.
+     *
+     * @return The encoding.
+     */
+    public String getEncoding()
+    {
+        return encoding;
+    }
+
+    /**
+     * Sets encoding to use for filenames.
+     *
+     * @param encoding The encoding to use for filenames.
+     */
+    public void setEncoding( String encoding )
+    {
+        this.encoding = encoding;
+    }
+
+    /**
      * Set compression method.
      * Allowable values are
      * <ul>
@@ -194,6 +220,7 @@ public class TarArchiver
             // warn or GNU
             tOut.setLongFileMode( TarOutputStream.LONGFILE_GNU );
         }
+        tOut.setEncoding( encoding );
 
         longWarningGiven = false;
         while ( iter.hasNext() )

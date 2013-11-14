@@ -37,6 +37,13 @@ import java.util.zip.GZIPInputStream;
 public class TarUnArchiver
     extends AbstractZipUnArchiver
 {
+    
+    /**
+     * Encoding to use for filenames, defaults to the platform's
+     * default encoding.
+     */
+    private String encoding;
+
     public TarUnArchiver()
     {
     }
@@ -69,11 +76,23 @@ public class TarUnArchiver
     }
 
     /**
-     * No encoding support in Untar.
+     * Gets encoding used for filenames.
+     *
+     * @return The encoding.
+     */
+    public String getEncoding()
+    {
+        return encoding;
+    }
+
+    /**
+     * Sets encoding to use for filenames.
+     *
+     * @param encoding The encoding to use for filenames.
      */
     public void setEncoding( String encoding )
     {
-        getLogger().warn( "The TarUnArchiver doesn't support the encoding attribute" );
+        this.encoding = encoding;
     }
 
     protected void execute()
@@ -86,6 +105,7 @@ public class TarUnArchiver
             tis = new TarInputStream( compression.decompress( getSourceFile(),
                                                               new BufferedInputStream(
                                                                   new FileInputStream( getSourceFile() ) ) ) );
+            tis.setEncoding( encoding );
             TarEntry te;
 
             while ( ( te = tis.getNextEntry() ) != null )

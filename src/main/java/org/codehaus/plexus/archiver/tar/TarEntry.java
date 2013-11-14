@@ -329,10 +329,22 @@ public class TarEntry
      */
     public TarEntry( byte[] headerBuf )
     {
-        this();
-        this.parseTarHeader( headerBuf );
+        this( headerBuf, null );
     }
 
+    /**
+     * Construct an entry from an archive's header bytes. File is set
+     * to null.
+     *
+     * @param headerBuf The header bytes from a tar archive entry.
+     * @param encoding The encoding to use for filenames.
+     */
+    public TarEntry( byte[] headerBuf, String encoding )
+    {
+        this();
+        this.parseTarHeader( headerBuf, encoding );
+    }
+    
     /**
      * Determine if the two entries are equal. Equality is determined
      * by the header names being equal.
@@ -666,9 +678,20 @@ public class TarEntry
      */
     public void writeEntryHeader( byte[] outbuf )
     {
+        writeEntryHeader( outbuf, null );
+    }
+
+    /**
+     * Write an entry's header information to a header buffer.
+     *
+     * @param outbuf The tar entry header buffer to fill in.
+     * @param encoding The encoding to use for filenames.
+     */
+    public void writeEntryHeader( byte[] outbuf, String encoding )
+    {
         int offset = 0;
 
-        offset = TarUtils.getNameBytes( this.name, outbuf, offset, NAMELEN );
+        offset = TarUtils.getNameBytes( this.name, outbuf, offset, NAMELEN, encoding );
         offset = TarUtils.getOctalBytes( this.mode, outbuf, offset, MODELEN );
         offset = TarUtils.getOctalBytes( ( this.userId >= 0 ? this.userId : 0 ), outbuf, offset, UIDLEN );
         offset = TarUtils.getOctalBytes( ( this.groupId >= 0 ? this.groupId : 0 ), outbuf, offset, GIDLEN );
@@ -699,7 +722,7 @@ public class TarEntry
 
         TarUtils.getCheckSumOctalBytes( checkSum, outbuf, csOffset, CHKSUMLEN );
     }
-
+    
     /**
      * Parse an entry's header information from a header buffer.
      *
@@ -707,9 +730,27 @@ public class TarEntry
      */
     public void parseTarHeader( byte[] header )
     {
+        parseTarHeader( header, null );
+    }
+
+    /**
+     * Parse an entry's header information from a header buffer.
+     *
+     * @param header The tar entry header buffer to get information from.
+     * @param encoding The encoding to use for filenames.
+     */
+    public void parseTarHeader( byte[] header, String encoding )
+    {
         int offset = 0;
 
-        this.name = TarUtils.parseName( header, offset, NAMELEN );
+        if ( encoding == null )
+        {
+            this.name = TarUtils.parseName( header, offset, NAMELEN );
+        }
+        else
+        {
+            this.name = TarUtils.parseName( header, offset, NAMELEN, encoding );
+        }
         offset += NAMELEN;
         this.mode = (int) TarUtils.parseOctal( header, offset, MODELEN );
         offset += MODELEN;

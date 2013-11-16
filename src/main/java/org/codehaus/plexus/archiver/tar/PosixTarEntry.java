@@ -114,12 +114,13 @@ public class PosixTarEntry extends TarEntry
      * Write an entry's header information to a header buffer.
      *
      * @param outbuf The tar entry header buffer to fill in.
+     * @param encoding The encoding to use for filenames.
      */
-    public void writeEntryHeader( byte[] outbuf )
+    public void writeEntryHeader( byte[] outbuf, String encoding )
     {
         int offset = 0;
 
-        offset = TarUtils.getNameBytes( this.name, outbuf, offset, NAMELEN );
+        offset = TarUtils.getNameBytes( this.name, outbuf, offset, NAMELEN, encoding );
         offset = TarUtils.getOctalBytes( this.mode, outbuf, offset, MODELEN );
         offset = TarUtils.getOctalBytes( ( this.userId >= 0 ? this.userId : 0 ), outbuf, offset, UIDLEN );
         offset = TarUtils.getOctalBytes( ( this.groupId >= 0 ? this.groupId : 0 ), outbuf, offset, GIDLEN );
@@ -157,12 +158,13 @@ public class PosixTarEntry extends TarEntry
      * Parse an entry's header information from a header buffer.
      *
      * @param header The tar entry header buffer to get information from.
+     * @param encoding The encoding to use for filenames.
      */
-    public void parseTarHeader( byte[] header )
+    public void parseTarHeader( byte[] header, String encoding )
     {
         int offset = 0;
 
-        this.name = TarUtils.parseName( header, offset, NAMELEN );
+        this.name = TarUtils.parseName( header, offset, NAMELEN, encoding );
         offset += NAMELEN;
         this.mode = (int) TarUtils.parseOctal( header, offset, MODELEN );
         offset += MODELEN;

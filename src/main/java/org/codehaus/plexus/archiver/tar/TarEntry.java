@@ -743,14 +743,7 @@ public class TarEntry
     {
         int offset = 0;
 
-        if ( encoding == null )
-        {
-            this.name = TarUtils.parseName( header, offset, NAMELEN );
-        }
-        else
-        {
-            this.name = TarUtils.parseName( header, offset, NAMELEN, encoding );
-        }
+        this.name = TarUtils.parseName( header, offset, NAMELEN, encoding );
         offset += NAMELEN;
         this.mode = (int) TarUtils.parseOctal( header, offset, MODELEN );
         offset += MODELEN;

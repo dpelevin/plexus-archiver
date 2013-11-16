@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -294,32 +295,105 @@ public class TarArchiverTest
         tis = new TarInputStream( new BufferedInputStream( new FileInputStream( archiver.getDestFile() ) ) );
         TarEntry te;
 
-        while ( ( te = tis.getNextEntry() ) != null )
+        try
         {
-            if ( te.isDirectory() )
+            while ( ( te = tis.getNextEntry() ) != null )
             {
-                assertEquals( 0500, te.getMode() & UnixStat.PERM_MASK );
-            }
-            else
-            {
-                if ( te.getName().equals( "one.txt" ) )
+                if ( te.isDirectory() )
                 {
-                    assertEquals( 0640, te.getMode() & UnixStat.PERM_MASK );
-                }
-                else if ( te.getName().equals( "two.txt" ) )
-                {
-                    assertEquals( 0664, te.getMode() & UnixStat.PERM_MASK );
+                    assertEquals( 0500, te.getMode() & UnixStat.PERM_MASK );
                 }
                 else
                 {
-                    assertEquals( 0400, te.getMode() & UnixStat.PERM_MASK );
+                    if ( te.getName().equals( "one.txt" ) )
+                    {
+                        assertEquals( 0640, te.getMode() & UnixStat.PERM_MASK );
+                    }
+                    else if ( te.getName().equals( "two.txt" ) )
+                    {
+                        assertEquals( 0664, te.getMode() & UnixStat.PERM_MASK );
+                    }
+                    else
+                    {
+                        assertEquals( 0400, te.getMode() & UnixStat.PERM_MASK );
+                    }
+                    
                 }
-
             }
         }
-
+        finally
+        {
+            if ( tis != null )
+            {
+                tis.close();
+            }
+        }
     }
 
+    public void testCreateArchiveWithNonDefaultEncoding()
+                    throws Exception
+                    {
+        String enc1 = "CP866";
+        String enc2 = "CP1251";
+        final String encoding;
+
+        if ( !enc1.equals( Charset.defaultCharset().name() ) )
+        {
+            encoding = enc1;
+        }
+        else if ( !enc2.equals( Charset.defaultCharset().name() ) )
+        {
+            encoding = enc2;
+        }
+        else
+        {
+            String msg = "It's impossible, but we have two default encodigns! :)";
+            fail( msg );
+            // Suppressing 'uninitialized variable' error. 
+            throw new RuntimeException( msg );
+        }
+
+        TarArchiver archiver = (TarArchiver) lookup( Archiver.ROLE, "tar" );
+        
+        archiver.addFile( getTestFile( "src/test/resources/manifests/manifest1.mf" ), "один.txt" );
+        archiver.addFile( getTestFile( "src/test/resources/manifests/manifest2.mf" ), "два.txt", 0664 );
+        archiver.setDestFile( getTestFile( "target/output/archiveNonDefaultEncoding.tar" ) );
+        archiver.setEncoding( encoding );
+        archiver.createArchive();
+        
+        TarInputStream tis;
+        
+        tis = new TarInputStream( new BufferedInputStream( new FileInputStream( archiver.getDestFile() ) ) );
+        tis.setEncoding( encoding );
+        TarEntry te;
+        
+        boolean firstFileFound = false;
+        boolean secondFileFound = false;
+        
+        try
+        {
+            while ( ( te = tis.getNextEntry() ) != null )
+            {
+                if ( te.getName().equals( "один.txt" ) )
+                {
+                    firstFileFound = true;
+                }
+                else if ( te.getName().equals( "два.txt" ) )
+                {
+                    secondFileFound = true;
+                }
+            }
+            assertTrue( "Files not found in archive!", firstFileFound && secondFileFound );
+        }
+        finally
+        {
+            if ( tis != null )
+            {
+                tis.close();
+            }
+        }
+    }
+    
     private class TarHandler
     {
         File createTarFile()
